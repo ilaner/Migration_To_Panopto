@@ -1,13 +1,10 @@
 import argparse
 import base64
 import pickle
-import schedule
 import urllib3
 import config
 from dateutil import parser
-import pytz
 import json
-from datetime import datetime, timezone
 from bs4 import BeautifulSoup
 from panopto_folders import PanoptoFolders
 from panopto_oauth2 import PanoptoOAuth2
@@ -61,11 +58,8 @@ def course_id_to_panopto_id(folders):
             for lesson in lessons:
                 current_urls = (lesson['PrimaryVideo'], lesson['SecondaryVideo'])
                 soup = BeautifulSoup(config.xml, 'xml')
-                date_str = lesson['CreationDate']
-                datetime_object = parser.parse(date_str)
-                israel = pytz.timezone('Israel')
-                date_local = israel.localize(datetime_object)
-                date_iso = date_local.isoformat(timespec='milliseconds')
+                datetime_object = parser.parse(lesson['CreationDate'])
+                date_iso = config.ISRAEL.localize(datetime_object).isoformat(timespec='milliseconds')
                 new_title = lesson['Title'].replace('</div>', '').strip()
                 new_title = config.REGEX.sub(' ', new_title)
                 for title in soup.find_all('Title'):
@@ -81,7 +75,7 @@ def course_id_to_panopto_id(folders):
                 xml = soup.prettify().replace()  # todo
 
                 lst_of_args.append(
-                    (course_id, semester, year, new_title, date_str, current_urls, xml, panopto_id))
+                    (course_id, semester, year, new_title, lesson['CreationDate'], current_urls, xml, panopto_id))
             lst.append(lst_of_args)
             print(lst)
 

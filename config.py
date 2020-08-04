@@ -1,4 +1,5 @@
 import re
+import pytz
 
 PANOPTO_SERVER_NAME = 'huji.cloud.panopto.eu'
 PANOPTO_CLIEND_ID = None
@@ -10,7 +11,7 @@ YEARS = {2018: '2018-19',
 
 
 REGEX = re.compile(r'[\n\r\t]')
-
+ISRAEL = pytz.timezone('Israel')
 
 xml = """<?xml version="1.0" encoding="utf-8"?>
 <Session xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://tempuri.org/UniversalCaptureSpecification/v1">
