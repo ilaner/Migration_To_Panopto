@@ -21,6 +21,6 @@ upload.py --client-id <panopto client id> --client-secret <panopto client secret
 ```
   
 Please note:
-Semester: "Semster 1" or "Semester 2" or "Summer"
-Year: The starting of the school year. i.e 2017-2018 is 2017.
-folder-id: Optional argument for specific panopto id. If ignored, will search for the course in the Moodle structure.
+- Semester: "Semster 1" or "Semester 2" or "Summer"
+- Year: The starting of the school year. i.e 2017-2018 is 2017.
+- folder-id: Optional argument for specific panopto id. If ignored, will search for the course in the Moodle structure.
