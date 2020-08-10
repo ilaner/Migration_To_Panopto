@@ -90,7 +90,7 @@ class UcsUploader:
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(xml)
 
-        self.__upload_xml(upload_target, file_path)
+        self.__multipart_upload(upload_target, file_path)
         os.remove(file_path)
 
         for url in urls:
@@ -160,68 +160,42 @@ class UcsUploader:
             aws_access_key_id='dummy',
             aws_secret_access_key='dummy')
 
-        config = TransferConfig(
-            multipart_threshold=PART_SIZE,
-            max_concurrency=100,
-            num_download_attempts=10,
-            use_threads=True
-        )
+        if os.path.getsize(file_path) < 2*PART_SIZE:
+            mpu = s3.create_multipart_upload(Bucket=bucket, Key=object_key)
+            mpu_id = mpu['UploadId']
 
-        transfer = S3Transfer(s3, config)
-        transfer.upload_file(file_path, bucket, object_key, callback=ProgressPercentage(file_path))
+            # Iterate through parts
+            parts = []
 
-    def __upload_xml(self, upload_target, file_path):
-        '''
-        Upload a single file by using Multipart upload protocol.
-        We use AWS SDK (boto3) underneath for this step.
-        '''
-        # Upload target which is returned by sessionUpload API consists of:
-        # https://{service endpoint}/{bucket}/{prefix}
-        # where {bucket} and {prefix} are single element (without delimiter) individually.
-        elements = upload_target.split('/')
-        service_endpoint = '/'.join(elements[0:-2:])
-        bucket = elements[-2]
-        prefix = elements[-1]
-        object_key = '{0}/{1}'.format(prefix, os.path.basename(file_path))
+            uploaded_bytes = 0
 
-        print('')
-        print('Upload {0} with multipart upload protocol'.format(file_path))
-        print('  endpoint URL: {0}'.format(service_endpoint))
-        print('  bucket name : {0}'.format(bucket))
-        print('  object key  : {0}'.format(object_key))
+            total_bytes = os.stat(file_path).st_size
+            with open(file_path, 'rb') as f:
+                i = 1
+                while True:
+                    data = f.read(PART_SIZE)
+                    if not len(data):
+                        break
+                    part = s3.upload_part(Body=data, Bucket=bucket, Key=object_key, UploadId=mpu_id, PartNumber=i)
+                    parts.append({'PartNumber': i, "ETag": part['ETag']})
+                    uploaded_bytes += len(data)
+                    print('  -- {0} of {1} bytes uploaded'.format(uploaded_bytes, total_bytes))
+                    i += 1
 
-        # Create S3 client with custom endpoint on Panopto server.
-        # Panopto server does not refer access key or secret, but the library needs
-        # some values to start, otherwise no credentials error is thrown.
-        s3 = boto3.session.Session().client(
-            service_name='s3',
-            endpoint_url=service_endpoint,
-            verify=self.ssl_verify,
-            aws_access_key_id='dummy',
-            aws_secret_access_key='dummy')
-        # Initiate multipart upload.
-        mpu = s3.create_multipart_upload(Bucket=bucket, Key=object_key)
-        mpu_id = mpu['UploadId']
+            # Copmlete
+            result = s3.complete_multipart_upload(Bucket=bucket, Key=object_key, UploadId=mpu_id,
+                                                  MultipartUpload={"Parts": parts})
+        else:
+            config = TransferConfig(
+                multipart_threshold=PART_SIZE,
+                max_concurrency=100,
+                num_download_attempts=10,
+                use_threads=True
+            )
 
-        # Iterate through parts
-        parts = []
+            transfer = S3Transfer(s3, config)
+            transfer.upload_file(file_path, bucket, object_key, callback=ProgressPercentage(file_path))
 
-        uploaded_bytes = 0
-
-        total_bytes = os.stat(file_path).st_size
-        with open(file_path, 'rb') as f:
-            i = 1
-            while True:
-                data = f.read(PART_SIZE)
-                if not len(data):
-                    break
-                part = s3.upload_part(Body=data, Bucket=bucket, Key=object_key, UploadId=mpu_id, PartNumber=i)
-                parts.append({'PartNumber': i, "ETag": part['ETag']})
-                uploaded_bytes += len(data)
-                print('  -- {0} of {1} bytes uploaded'.format(uploaded_bytes, total_bytes))
-                i += 1
-
-    # Copmlete
 
     def __finish_upload(self, session_upload):
         '''
@@ -260,6 +234,7 @@ class UcsUploader:
 
             if session_upload['State'] == 4:  # Complete
                 break
+
 
 # def __multipart_upload_single_file(self, upload_target, file_path):
 #     '''
@@ -315,10 +290,6 @@ class UcsUploader:
 #     result = s3.complete_multipart_upload(Bucket=bucket, Key=object_key, UploadId=mpu_id,
 #                                           MultipartUpload={"Parts": parts})
 #     print('  -- complete called.')
-
-
-
-
 
 
 class ProgressPercentage(object):

@@ -6,6 +6,8 @@ import config
 from dateutil import parser
 import json
 from bs4 import BeautifulSoup
+import io
+import xml.etree.ElementTree as ET
 from panopto_folders import PanoptoFolders
 from panopto_oauth2 import PanoptoOAuth2
 from ucs_uploader import UcsUploader
@@ -18,12 +20,20 @@ def parse_argument():
     parser = argparse.ArgumentParser(description='Upload videos to panopto')
     parser.add_argument('--client-id', dest='client_id', required=True, help='Client ID of OAuth2 client')
     parser.add_argument('--client-secret', dest='client_secret', required=True, help='Client Secret of OAuth2 client')
+    parser.add_argument('--course-id', dest='course_id', required=False)
+    parser.add_argument('--semester', dest='semester', required=False)
+    parser.add_argument('--year', dest='year', required=False, help='Starting year of the course')
+    parser.add_argument('--folder-id', dest='folder_id', required=False, help='Panopto folder id of the destination')
     args = parser.parse_args()
     if args.client_id is None or args.client_secret is None:
         print('Usage: upload.py --client-id <panopto_client-id> --client-secret <panopto_client-secret>')
         exit(1)
     config.PANOPTO_CLIEND_ID = args.client_id
     config.PANOPTO_SECRET = args.client_secret
+    config.COURSE_ID = str(args.course_id)
+    config.SEMESTER = args.semester
+    config.YEAR = int(args.year)
+    config.FOLDER_ID = args.folder_id
 
 
 def load_full_courses():
@@ -48,34 +58,52 @@ def search(folders, course_id, year, semester):
 def course_id_to_panopto_id(folders):
     lst = []
     dct = load_full_courses()
-    for (course_id, year, semester), courses in dct.items():
-        panopto_id = search(folders, course_id, year, semester)
-        if panopto_id is None:
-            print(course_id, year, semester, "PROBLEMMMMMMMMM")
-            continue
-        for name, lessons in courses.items():
+    lst_of_dcts = []
+    if config.COURSE_ID and config.SEMESTER and config.YEAR:
+        if not config.FOLDER_ID:
+            config.FOLDER_ID = search(folders, config.COURSE_ID, config.SEMESTER, config.COURSE_ID)
+        lst_of_dcts = [((config.COURSE_ID, config.YEAR, config.SEMESTER),
+                        dct[(config.COURSE_ID, config.YEAR, config.SEMESTER)], config.FOLDER_ID)]
+        print(lst_of_dcts)
+
+    else:
+        for (course_id, year, semester), courses in dct.items():
+            panopto_id = search(folders, course_id, year, semester)
+            if panopto_id is None:
+                print(course_id, year, semester, "PROBLEMMMMMMMMM")
+                continue
+            lst_of_dcts.append(((course_id, year, semester), courses, panopto_id))
+    for (course_id, year, semester), course, panopto_id in lst_of_dcts:
+        for name, lessons in course.items():
             lst_of_args = []
             for lesson in lessons:
                 current_urls = (lesson['PrimaryVideo'], lesson['SecondaryVideo'])
-                soup = BeautifulSoup(config.xml, 'xml')
-                datetime_object = parser.parse(lesson['CreationDate'])
-                date_iso = config.ISRAEL.localize(datetime_object).isoformat(timespec='milliseconds')
+                tree = ET.parse(io.StringIO(config.xml))
+                root = tree.getroot()
+                date_str = lesson['CreationDate']
+                datetime_object = parser.parse(date_str)
+                date_local = config.ISRAEL.localize(datetime_object)
+                date_iso = date_local.isoformat(timespec='milliseconds')
                 new_title = lesson['Title'].replace('</div>', '').strip()
                 new_title = config.REGEX.sub(' ', new_title)
-                for title in soup.find_all('Title'):
-                    title.string = new_title
-                for description in soup.find_all('Description'):
-                    new_description = lesson['Description'].replace('</div>', '').replace('\ufeff', '').strip()
-                    new_description = config.REGEX.sub(' ', new_description)
-                    description.string = new_description
-                for date in soup.find_all('Date'):
-                    date.string = date_iso
-                for file, url in zip(soup.find_all('File'), current_urls):
-                    file.string = url.split('/')[-1]
-                xml = soup.prettify().replace()  # todo
+                for title in root.iter('Title'):
 
-                lst_of_args.append(
-                    (course_id, semester, year, new_title, lesson['CreationDate'], current_urls, xml, panopto_id))
+                    title.text = new_title
+                for description in root.iter('Description'):
+                    new_description = lesson['Description'].replace('</div>', '').replace('\ufeff','').strip()
+                    new_description = config.REGEX.sub(' ', new_description)
+                    description.text = new_description
+                for date in root.iter('Date'):
+                    date.text = date_iso
+                for file, url in zip(root.iter('File'), current_urls):
+                    file.text = url.split('/')[-1]
+
+                xml_str = ET.tostring(root, encoding='unicode', method='xml')
+                xml_str = xml_str.replace('<Session>', '<?xml version="1.0" encoding="utf-8"?> \n'
+                                             '<Session xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://tempuri.org/UniversalCaptureSpecification/v1">')
+
+                lst_of_args.append((course_id, semester, year, new_title, date_str, current_urls, xml_str, panopto_id))
+
             lst.append(lst_of_args)
             print(lst)
 
@@ -89,25 +117,20 @@ def main():
     '''
     Main method
     '''
-
+    parse_argument()
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-    try:
-        oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
-        uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
-        folders = PanoptoFolders(config.PANOPTO_SERVER_NAME, False, oauth2)
-        # get_lists(folders)
-        with open('mapping.pkl', 'rb') as f:
-            lst = pickle.load(f)
-        with open('uploader.log', 'w') as f:
-            for lst_of_args in lst:
-                for (course_id, semester, year, title, date, urls, xml, panopto_id) in lst_of_args:
-                    f.write(f'Uploading course {course_id}, {semester}, {year}, {title} in {date} to id {panopto_id}\n')
-                    f.flush()
-                    uploader.upload_folder(urls, xml, panopto_id)
-    except:
-        print('Can"t authorize, check your credentials. Remember to save!')
-        exit(1)
+    oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
+    uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
+    folders = PanoptoFolders(config.PANOPTO_SERVER_NAME, False, oauth2)
+    course_id_to_panopto_id(folders)
+    with open('mapping.pkl', 'rb') as f:
+        lst = pickle.load(f)
+    with open('uploader.log', 'w') as f:
+        for lst_of_args in lst:
+            for (course_id, semester, year, title, date, urls, xml, panopto_id) in lst_of_args:
+                f.write(f'Uploading course {course_id}, {semester}, {year}, {title} in {date} to id {panopto_id}\n')
+                f.flush()
+                uploader.upload_folder(urls, xml, panopto_id)
     # for folder in os.listdir(DIRECTORY):
 
 
