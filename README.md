@@ -1,7 +1,7 @@
 A program to migrate course from StreamitUP (2016 and further) to HUJI Panopto.
 
 
-## Instrctions for setting up Panopto API
+## Instructions for setting up Panopto API
 1. Sign in to the Panopto web site as Administarator
 2. Click the System icon at the left-bottom corner.
 3. Click API Clients
@@ -14,8 +14,11 @@ A program to migrate course from StreamitUP (2016 and further) to HUJI Panopto.
 10. Note the created Client ID and Client Secret.
 
 ## Usage
+Download and install Python 3.8. Run:
+```shell
 pip install requirements.txt
 upload.py --client-id <panopto client id> --client-secret <panopto client secret> --course-id <HUJI course id> --semester <semester> --year <year> --folder-id <panotpo folder id>
+```
   
 Please note:
 Semester: "Semster 1" or "Semester 2" or "Summer"
