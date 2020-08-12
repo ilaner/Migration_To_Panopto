@@ -8,10 +8,12 @@ import json
 from bs4 import BeautifulSoup
 import io
 import xml.etree.ElementTree as ET
+import httplib2
 from panopto_folders import PanoptoFolders
 from panopto_oauth2 import PanoptoOAuth2
 from ucs_uploader import UcsUploader
 
+h = httplib2.Http()
 
 def parse_argument():
     '''
@@ -25,9 +27,6 @@ def parse_argument():
     parser.add_argument('--year', dest='year', required=False, help='Starting year of the course')
     parser.add_argument('--folder-id', dest='folder_id', required=False, help='Panopto folder id of the destination')
     args = parser.parse_args()
-    if args.client_id is None or args.client_secret is None:
-        print('Usage: upload.py --client-id <panopto_client-id> --client-secret <panopto_client-secret>')
-        exit(1)
     config.PANOPTO_CLIEND_ID = args.client_id
     config.PANOPTO_SECRET = args.client_secret
     config.COURSE_ID = str(args.course_id)
@@ -86,11 +85,16 @@ def course_id_to_panopto_id(folders):
                 date_iso = date_local.isoformat(timespec='milliseconds')
                 new_title = lesson['Title'].replace('</div>', '').strip()
                 new_title = config.REGEX.sub(' ', new_title)
+                resp = h.request(current_urls[1], 'HEAD')
+                if not int(resp[0]['status']) < 400:
+                    e = root.findall('Videos')[0].findall('Video')[1]
+                    print(e)
+                    for child in list(e):
+                        e.remove(child)
                 for title in root.iter('Title'):
-
                     title.text = new_title
                 for description in root.iter('Description'):
-                    new_description = lesson['Description'].replace('</div>', '').replace('\ufeff','').strip()
+                    new_description = lesson['Description'].replace('</div>', '').replace('\ufeff', '').strip()
                     new_description = config.REGEX.sub(' ', new_description)
                     description.text = new_description
                 for date in root.iter('Date'):
@@ -100,7 +104,7 @@ def course_id_to_panopto_id(folders):
 
                 xml_str = ET.tostring(root, encoding='unicode', method='xml')
                 xml_str = xml_str.replace('<Session>', '<?xml version="1.0" encoding="utf-8"?> \n'
-                                             '<Session xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://tempuri.org/UniversalCaptureSpecification/v1">')
+                                                       '<Session xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://tempuri.org/UniversalCaptureSpecification/v1">')
 
                 lst_of_args.append((course_id, semester, year, new_title, date_str, current_urls, xml_str, panopto_id))
 
@@ -110,7 +114,7 @@ def course_id_to_panopto_id(folders):
     with open('mapping.pkl', 'wb') as f:
         pickle.dump(lst, f)
     with open('data.txt', 'w') as outfile:
-        json.dump(lst, outfile, indent=4)
+        json.dump(lst, outfile, ensure_ascii=False, indent=4)
 
 
 def main():
