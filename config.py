@@ -19,7 +19,7 @@ YEARS = {2018: '2018-19',
 REGEX = re.compile(r'[\n\r\t]')
 ISRAEL = pytz.timezone('Israel')
 
-xml = """
+UCS = """
 <Session>
   <Title>Test session with audio, video and a presentation</Title>
   <Description/>
@@ -31,7 +31,7 @@ xml = """
       <Cuts/>
       <TableOfContents>
       </TableOfContents>
-      <Type>Audio</Type>
+      <Type>Primary</Type>
       <Transcripts/>
     </Video>
     <Video>
@@ -53,3 +53,17 @@ xml = """
   <Attachments/>
 </Session>
 """
+
+SIMPLE = """
+<Session>
+  <Title>{Title}</Title>
+  <Description>{Description}</Description>
+  <Date>{Date}</Date>
+  <Videos>
+    <Video>
+      <Start>PT0S</Start>
+      <File>{Filename}</File>
+      <Type>Primary</Type>
+    </Video>
+  </Videos>
+</Session>"""

@@ -15,6 +15,7 @@ from ucs_uploader import UcsUploader
 
 h = httplib2.Http()
 
+
 def parse_argument():
     '''
     Argument definition and handling.
@@ -67,36 +68,33 @@ def course_id_to_panopto_id(folders):
 
     else:
         for (course_id, year, semester), courses in dct.items():
-            panopto_id = search(folders, course_id, year, semester)
-            if panopto_id is None:
-                print(course_id, year, semester, "PROBLEMMMMMMMMM")
-                continue
-            lst_of_dcts.append(((course_id, year, semester), courses, panopto_id))
+            if year == 2018:
+                panopto_id = search(folders, course_id, year, semester)
+                if panopto_id is None:
+                    print(course_id, year, semester, "PROBLEMMMMMMMMM")
+                    continue
+                lst_of_dcts.append(((course_id, year, semester), courses, panopto_id))
     for (course_id, year, semester), course, panopto_id in lst_of_dcts:
         for name, lessons in course.items():
             lst_of_args = []
             for lesson in lessons:
                 current_urls = (lesson['PrimaryVideo'], lesson['SecondaryVideo'])
-                tree = ET.parse(io.StringIO(config.xml))
+                resp = h.request(current_urls[1], 'HEAD')
+                if not int(resp[0]['status']) < 400:
+                    tree = ET.parse(io.StringIO(config.SIMPLE))
+                    current_urls = [lesson['PrimaryVideo']]
+                else:
+                    tree = ET.parse(io.StringIO(config.UCS))
                 root = tree.getroot()
                 date_str = lesson['CreationDate']
                 datetime_object = parser.parse(date_str)
                 date_local = config.ISRAEL.localize(datetime_object)
                 date_iso = date_local.isoformat(timespec='milliseconds')
-                new_title = lesson['Title'].replace('</div>', '').strip()
-                new_title = config.REGEX.sub(' ', new_title)
-                resp = h.request(current_urls[1], 'HEAD')
-                if not int(resp[0]['status']) < 400:
-                    e = root.findall('Videos')[0].findall('Video')[1]
-                    print(e)
-                    for child in list(e):
-                        e.remove(child)
+
                 for title in root.iter('Title'):
-                    title.text = new_title
+                    title.text = lesson['Title']
                 for description in root.iter('Description'):
-                    new_description = lesson['Description'].replace('</div>', '').replace('\ufeff', '').strip()
-                    new_description = config.REGEX.sub(' ', new_description)
-                    description.text = new_description
+                    description.text = lesson['Description']
                 for date in root.iter('Date'):
                     date.text = date_iso
                 for file, url in zip(root.iter('File'), current_urls):
@@ -106,10 +104,11 @@ def course_id_to_panopto_id(folders):
                 xml_str = xml_str.replace('<Session>', '<?xml version="1.0" encoding="utf-8"?> \n'
                                                        '<Session xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://tempuri.org/UniversalCaptureSpecification/v1">')
 
-                lst_of_args.append((course_id, semester, year, new_title, date_str, current_urls, xml_str, panopto_id))
+                lst_of_args.append(
+                    (course_id, semester, year, lesson['Description'], date_str, current_urls, xml_str, panopto_id))
 
             lst.append(lst_of_args)
-            print(lst)
+            # print(lst)
 
     with open('mapping.pkl', 'wb') as f:
         pickle.dump(lst, f)
