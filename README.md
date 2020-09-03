@@ -8,7 +8,7 @@ The program purpose is migrating Hebrew University Jerusalem recording lectures 
 
 In 2020, during COVID-19 pandemic, the Hebrew University changed its recording company from StreamitUp to Panopto, and they had to move their archive as well.
 
-This project was built only with access to StreamitUP website, and without any access to their API. The videos and the metadata were parsed manually, and created the database of all the videos that was recorded using this service.
+This project was built with access to StreamitUP website only, and without any access to their API. The videos and the metadata were parsed manually, and created the database of all the videos that was recorded using this service in Hebrew University.
 
  After collecting the database, upload to panopto was needed. It was used with panopto upload API using UCS method, which I used the example here: 
 
