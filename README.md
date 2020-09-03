@@ -56,8 +56,8 @@ You can add course id, year, semseter. In this case only what you entered will b
 In addition, you can add folder id. In this case, what you ask to upload will be uploaded to this specific panopto folder id.
 
 In order to run, run with shell, or with Pycharm with those arguments:
+*shell
 ```
-sh
 upload.py --client-id <panopto client id> --client-secret <panopto client secret> --course-id <HUJI course id> --semester <semester> --year <year> --folder-id <panotpo folder id>
 ```
 
