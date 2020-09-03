@@ -10,7 +10,7 @@ In 2020, during COVID-19 pandemic, the Hebrew University changed its recording c
 
 This project was built with access to StreamitUP website only, and without any access to their API. The videos and the metadata were parsed manually, and created the database of all the videos that was recorded using this service in Hebrew University.
 
- After collecting the database, upload to panopto was needed. It was used with panopto upload API using UCS method, which I used the example here: 
+ After collecting the database, upload to panopto was needed. It was used with panopto upload API using UCS method, which I learned from the example here: 
 
  [panopto upload example](https://github.com/Panopto/upload-python-sample)
 
