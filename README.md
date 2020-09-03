@@ -5,13 +5,20 @@ A program to migrate course from StreamitUP (2016 and further) to HUJI Panopto.
 ## About The Project
 
 The program purpose is to move Hebrew University Jerusalem recording lectures database from StreamitUp to Panopto.
+
 In 2020, during COVID-19 pandemic, the Hebrew University changed it's recording company from StreamitUp to Panopto, and they had to move their archive as well.
+
 This project was built only with access to StreamitUP website, and without any access to their API. The videos and the metadata were parsed manually, and created the database of all the videos that was recorded using this service.
-After collecting the database, upload to panopto was needed. It was used with panopto upload API using UCS method, which I used the example here:
-*[panopto upload example](https://github.com/Panopto/upload-python-sample)
-It was neccessery in order to upload both cam and screen recordings into one session.
-The metadata collected was used to upload the lectures into the correct path, with the correct name and date.
-A lot of effort was made for this project, and I hope the outcome is good enough. 
+
+ After collecting the database, upload to panopto was needed. It was used with panopto upload API using UCS method, which I used the example here: 
+
+ [panopto upload example](https://github.com/Panopto/upload-python-sample)
+
+ It was neccessery in order to upload both cam and screen recordings into one session.
+
+ The metadata collected was used to upload the lectures into the correct path, with the correct name and date.
+
+ A lot of effort was made for this project, and I hope the outcome is good enough. 
 
 <!-- GETTING STARTED -->
 ## Getting Started
