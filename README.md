@@ -16,7 +16,7 @@ This project was built with access to StreamitUP website only, and without any a
 
  It was neccessery in order to upload both cam and screen recordings into one session.
 
- The metadata collected was used to upload the lectures into the correct path, with the correct name and date.
+ The metadata collected was used to upload the lectures into the correct Moodle path, with the correct name and date.
 
  A lot of effort was made for this project, and I hope the outcome is good enough. 
 
