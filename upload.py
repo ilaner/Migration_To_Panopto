@@ -68,7 +68,7 @@ def course_id_to_panopto_id(folders):
 
     else:
         for (course_id, year, semester), courses in dct.items():
-            if year == 2018:
+            if year == 2018 or year == 2019:
                 panopto_id = search(folders, course_id, year, semester)
                 if panopto_id is None:
                     print(course_id, year, semester, "PROBLEMMMMMMMMM")
