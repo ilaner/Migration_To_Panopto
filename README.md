@@ -4,7 +4,7 @@ A program to migrate course from StreamitUP (2016 and further) to HUJI Panopto.
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-The program purpose is to move Hebrew University Jerusalem recording lectures database from StreamitUp to Panopto.
+The program purpose is migrating Hebrew University Jerusalem recording lectures database from StreamitUp to Panopto.
 
 In 2020, during COVID-19 pandemic, the Hebrew University changed it's recording company from StreamitUp to Panopto, and they had to move their archive as well.
 
