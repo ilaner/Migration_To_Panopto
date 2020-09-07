@@ -23,9 +23,6 @@ This project was built with access to StreamitUP website only, and without any a
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
 ### Prerequisites
 
 Use Python 3.8, and run
