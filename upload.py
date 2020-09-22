@@ -74,7 +74,6 @@ def is_valid_url(url):
 def course_id_to_panopto_id(folders):
     courses_dct = load_full_courses()
     dct_of_args = {}
-    servers = set()
     for course_id, courses in courses_dct.items():
         for i, course in enumerate(courses):
             print(course)
@@ -82,13 +81,12 @@ def course_id_to_panopto_id(folders):
                 if year != 2018:
                     continue
                 for lesson in lessons:
-                    # panopto_id = search(folders, course_id, year, semester)
-                    # if panopto_id is None:
-                    #     print(f"Problem with {course_id}, {year}, {semester}")
-                    #     continue
+                    panopto_id = search(folders, course_id, year, semester)
+                    if panopto_id is None:
+                        print(f"Problem with {course_id}, {year}, {semester}")
+                        continue
                     current_urls = (lesson['PrimaryVideo'], lesson['SecondaryVideo'])
-                    servers.add(current_urls[0].split('/')[2])
-                    continue
+
                     if not is_valid_url(current_urls[1]):
                         tree = ET.parse(io.StringIO(config.SIMPLE))
                         current_urls = [lesson['PrimaryVideo']]
@@ -116,7 +114,6 @@ def course_id_to_panopto_id(folders):
                     dct_of_args[(
                         course_id, semester, year, lesson['Description'], date_str, current_urls, xml_str,
                         panopto_id)] = False
-    print(servers)
     with open('mapping.pkl', 'wb') as f:
         pickle.dump(dct_of_args, f)
     with open('data.txt', 'w') as outfile:
