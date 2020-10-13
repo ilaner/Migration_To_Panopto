@@ -102,7 +102,7 @@ class UcsUploader:
         # step 4 - finish the upload
         self.__finish_upload(session_upload)
         self.__setup_or_refresh_access_token()
-        return upload_id
+        return session_upload['SessionId']
         # step 5 - monitor the progress of processing
         # self.__monitor_progress(upload_id)
 
@@ -139,6 +139,16 @@ class UcsUploader:
             print('  {0}'.format(path))
 
         return files
+
+    def get_session_id(self, upload_id):
+        while True:
+            url = 'https://{0}/Panopto/PublicAPI/REST/sessionUpload/{1}'.format(self.server, upload_id)
+            resp = self.requests_session.get(url=url)
+            if self.__inspect_response_is_retry_needed(resp):
+                # If we get Unauthorized and token is refreshed, ignore the response at this time and wait for next time.
+                continue
+            session_upload = resp.json()
+            return session_upload['SessionId']
 
     def __multipart_upload(self, upload_target, file_path):
         elements = upload_target.split('/')
