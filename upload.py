@@ -126,7 +126,7 @@ def upload(is_manual: bool):
     for i, ser in full_data.iterrows():
         index_full = np.nonzero(cam_links == ser['CAM_URL'])[0][0]
         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
-        if not ser['FOLDER_ID'] or ser['FOLDER_URL'] != ser['FOLDER_ID'] or \
+        if not ser['FOLDER_URL'] or ser['FOLDER_URL'] != ser['FOLDER_URL'] or \
                 sheet_full_data.cell(index_full + 2, 1) == 'TRUE' or sheet.cell(index_ + 2, 7):
             continue
         folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL'])
