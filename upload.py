@@ -121,15 +121,18 @@ def upload(is_manual: bool):
     '''
     if is_manual:
         manuals = data[data['IS_TICKED'].values == 'TRUE']
+        manuals = manuals[manuals['TIME_UPLOADED'].notnull()]
         manuals = full_data[full_data['COURSE_NAME'].isin(manuals['COURSE_NAME'].values)]
+        manuals = manuals[manuals['IS_TICKED'].values == 'FALSE']
         full_data = manuals
     for i, ser in full_data.iterrows():
         index_full = np.nonzero(cam_links == ser['CAM_URL'])[0][0]
         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
-        if not ser['FOLDER_URL'] or ser['FOLDER_URL'] != ser['FOLDER_URL'] or \
-                sheet_full_data.cell(index_full + 2, 1) == 'TRUE' or sheet.cell(index_ + 2, 7):
+        if not ser['FOLDER_URL'] or \
+                sheet_full_data.cell(index_full + 2, 1) == 'TRUE' or sheet.cell(index_ + 2, 7).value:
+            print("why?")
             continue
-        folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL'])
+        folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
         urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
         session_id = uploader.upload_folder(urls, ser['XML'], folder_id)
         session_url = f'https://huji.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id={session_id}'
@@ -161,6 +164,50 @@ def main(is_manual):
 if __name__ == '__main__':
     is_manual = parse_argument()
     if is_manual:
-        schedule.every().do(main(is_manual))
+        main(is_manual)
+        schedule.every(2).minutes.do(main, is_manual)
     else:
         main(is_manual)
+    while True:
+        schedule.run_pending()
+
+
+# scope = ['https://spreadsheets.google.com/feeds',
+#          'https://www.googleapis.com/auth/drive']
+# creds = ServiceAccountCredentials.from_json_keyfile_name(config.GOOGLE_JSON, scope)
+# client = gspread.authorize(creds)
+# sheet = client.open("StreamitUP to Panopto DB").sheet1
+# sheet_full_data = client.open('Full StreamitUP Data').sheet1
+# data = pd.DataFrame(sheet.get_all_records())
+# full_data = pd.DataFrame(sheet_full_data.get_all_records())
+# cam_links = full_data['CAM_URL'].values
+# course_names = data['COURSE_NAME'].values
+# folder_urls = data['FOLDER_URL'].values
+# urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
+#
+# log = pd.read_csv('log_file_new.csv')
+# small_cells = []
+# big_cells = []
+# for i, ser in log.iterrows():
+#     index_full = np.nonzero(cam_links == ser['CAM_URL'])[0][0]
+#     index_ = np.nonzero(folder_urls == ser['FOLDER_URL'])[0][0]
+#     big_cells.append(Cell(row=index_full+2,col=1, value='TRUE'))
+#     big_cells.append(Cell(row=index_full+2,col=13, value=ser['SESSION_URL']))
+#     # sheet_full_data.update_cell(index_full + 2, 1, 'TRUE')
+#     # sheet_full_data.update_cell(index_full + 2, 13, ser['SESSION_URL'])
+#     small_cells.append(Cell(row=index_+2, col=1, value='TRUE'))
+#     small_cells.append(Cell(row=index_+2, col=7, value=datetime.now().isoformat()))
+#     # sheet.update_cell(index_ + 2, 1, 'TRUE')
+#     # sheet.update_cell(index_ + 2, 7, datetime.now().isoformat())
+#
+# while True:
+#     try:
+#         sheet.update_cells(small_cells)
+#         sheet_full_data.update_cells(big_cells)
+#         print('woohoo')
+#         break
+#     except gspread.exceptions.APIError as e:
+#         print(e)
+#         print('sleeping')
+#         time.sleep(100)

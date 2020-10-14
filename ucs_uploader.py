@@ -83,7 +83,7 @@ class UcsUploader:
         # files = self.__enumerate_files(local_folder)
 
         # step 3 - upload the files
-        file_path = 'Recordings/unique.xml'
+        file_path = 'unique.xml'
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(xml)
 
