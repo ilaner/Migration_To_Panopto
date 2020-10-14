@@ -69,9 +69,6 @@ class UcsUploader:
         # # Throw unhandled cases.
         # response.raise_for_status()
 
-    def upload(self, list_of_args):
-        self.upload_folder(list_of_args[0], list_of_args[1], list_of_args[2])
-
     def upload_folder(self, urls, xml, folder_id):
         '''
         Main upload method to go through all required steps.
@@ -94,11 +91,12 @@ class UcsUploader:
         os.remove(file_path)
 
         for url in urls:
-            file_name = url.split('/')[-1]
-            file_path = f'Recordings/{file_name}'
-            download(url, file_path)
+            if "http" in url:
+                file_path = f'/cs/cloudstore/{url.replace("http://", "")}'
+                download(url, file_path)
+            else:
+                file_path = url
             self.__multipart_upload(upload_target, file_path)
-            os.remove(file_path)
         # step 4 - finish the upload
         self.__finish_upload(session_upload)
         self.__setup_or_refresh_access_token()

@@ -1,14 +1,7 @@
 import argparse
-import base64
-import pickle
 import urllib3
 import config
-from dateutil import parser
-import json
-from bs4 import BeautifulSoup
 import pandas as pd
-import io
-import xml.etree.ElementTree as ET
 import httplib2
 from panopto_folders import PanoptoFolders
 from panopto_sessions import PanoptoSessions
@@ -16,6 +9,14 @@ from panopto_oauth2 import PanoptoOAuth2
 from ucs_uploader import UcsUploader
 import re
 import requests
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import numpy as np
+import os
+from datetime import datetime
+import time
+from gspread.models import Cell
+import schedule
 
 h = httplib2.Http()
 
@@ -27,25 +28,11 @@ def parse_argument():
     parser = argparse.ArgumentParser(description='Upload videos to panopto')
     parser.add_argument('--client-id', dest='client_id', required=True, help='Client ID of OAuth2 client')
     parser.add_argument('--client-secret', dest='client_secret', required=True, help='Client Secret of OAuth2 client')
-    parser.add_argument('--course-id', dest='course_id', required=False)
-    parser.add_argument('--semester', dest='semester', required=False)
-    parser.add_argument('--year', dest='year', required=False, help='Starting year of the course')
-    parser.add_argument('--folder-id', dest='folder_id', required=False, help='Panopto folder id of the destination')
+    parser.add_argument('--is-manual', dest='is_manual', required=True)
     args = parser.parse_args()
     config.PANOPTO_CLIEND_ID = args.client_id
     config.PANOPTO_SECRET = args.client_secret
-    config.COURSE_ID = str(args.course_id)
-    config.SEMESTER = args.semester
-    if config.YEAR:
-        config.YEAR = int(args.year)
-    config.FOLDER_ID = args.folder_id
-
-
-def load_full_courses():
-    with open("better_urls_fix.pkl", 'rb') as input:
-        decoded = bytes(input.read())
-    decoded = base64.b64decode(decoded)
-    return pickle.loads(decoded)
+    return True if args.is_manual == 'TRUE' else False
 
 
 def search(folders, course_id, year, semester):
@@ -74,19 +61,105 @@ def is_valid_url(url):
         return False
 
 
+body = lambda named_range_id: {
+    "requests": [
+        {
+            "addProtectedRange": {
+                "protectedRange": {
+                    "namedRangeId": named_range_id,
+                    "description": "Protecting via gsheets_manager",
+                    "warningOnly": False,
+                    "requestingUserCanEdit": False,
+                    "editors": {
+                        "users": ["ilanerukh@gmail.com", 'uploader-panotpo@uploader-panopto.iam.gserviceaccount.com']
+                    }}
+            }
+        }
+    ]
+}
 
 
-def main():
+# parse_argument()
+# urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
+# uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
+# folders = PanoptoFolders(config.PANOPTO_SERVER_NAME, False, oauth2)
+#
+#
+# def update_folder_structure(children):
+#     if not children:
+#         return
+#     for child in children:
+#         if '2017-18 ->' not in child['Name']:
+#             if not folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}'):
+#                 folders.setup_or_refresh_access_token()
+#                 folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}')
+#             print(child['Name'])
+#         update_folder_structure(folders.get_children(child['Id']))
+#
+#
+# update_folder_structure(folders.get_children('98ead464-9a2a-48ce-bef7-ac5300a34b5a'))
+# exit()
+
+def get_urls(cam_url, screen_url):
+    fpath_cam = f'/cs/cloudstore/{cam_url.replace("http://", "")}'
+    r = requests.get(cam_url, stream=True)
+    if os.path.exists(fpath_cam) and os.stat(fpath_cam).st_size == int(r.headers.get('content-length', 0)):
+        cam_url = fpath_cam
+    if screen_url and type(screen_url) != float:
+        fpath_screen = f'/cs/cloudstore/{screen_url.replace("http://", "")}'
+        r = requests.get(screen_url, stream=True)
+        if os.path.exists(fpath_screen) and os.stat(fpath_screen).st_size == int(r.headers.get('content-length', 0)):
+            screen_url = fpath_screen
+    return [cam_url, screen_url] if screen_url else [cam_url]
+
+
+def upload(is_manual: bool):
+    global full_data
     '''
     Main method
     '''
-    parse_argument()
+    if is_manual:
+        manuals = data[data['IS_TICKED'].values == 'TRUE']
+        manuals = full_data[full_data['COURSE_NAME'].isin(manuals['COURSE_NAME'].values)]
+        full_data = manuals
+    for i, ser in full_data.iterrows():
+        index_full = np.nonzero(cam_links == ser['CAM_URL'])[0][0]
+        index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
+        if not ser['FOLDER_ID'] or ser['FOLDER_ID'] != ser['FOLDER_ID'] or \
+                sheet_full_data.cell(index_full + 2, 1) == 'TRUE' or sheet.cell(index_ + 2, 7):
+            continue
+        urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
+        session_id = uploader.upload_folder(urls, ser['XML'], ser['FOLDER_ID'])
+        session_url = f'https://huji.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id={session_id}'
+        print(session_url)
+        sheet_full_data.update_cell(index_full + 2, 1, 'TRUE')
+        sheet_full_data.update_cell(index_full + 2, 13, session_url)
+        sheet.update_cell(index_ + 2, 1, 'TRUE')
+        sheet.update_cell(index_ + 2, 7, datetime.now().isoformat())
+
+
+def main(is_manual):
+    global data, uploader, cam_links, course_names, sheet_full_data, sheet, full_data
+    scope = ['https://spreadsheets.google.com/feeds',
+             'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name(config.GOOGLE_JSON, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open("StreamitUP to Panopto DB").sheet1
+    sheet_full_data = client.open('Full StreamitUP Data').sheet1
+    data = pd.DataFrame(sheet.get_all_records())
+    full_data = pd.DataFrame(sheet_full_data.get_all_records())
+    cam_links = full_data['CAM_URL'].values
+    course_names = data['COURSE_NAME'].values
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
     uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
-    folders = PanoptoFolders(config.PANOPTO_SERVER_NAME, False, oauth2)
-    # course_id_to_panopto_id(folders)
+    upload(is_manual)
 
 
 if __name__ == '__main__':
-    main()
+    is_manual = parse_argument()
+    if is_manual:
+        schedule.every().do(main(is_manual))
+    else:
+        main(is_manual)

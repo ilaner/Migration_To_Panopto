@@ -10,6 +10,7 @@ COURSE_ID = None
 SEMESTER = None
 YEAR = None
 FOLDER_ID = None
+GOOGLE_JSON = 'client_secret.json'
 
 YEARS = {2018: '2018-19',
          2019: '2019-20',
