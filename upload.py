@@ -126,11 +126,13 @@ def upload(is_manual: bool):
         manuals = manuals[manuals['IS_TICKED'].values == 'FALSE']
         full_data = manuals
     for i, ser in full_data.iterrows():
+        print(ser['COURSE_NAME'])
+        print(ser['TITLE'])
+        print(ser['FOLDER_URL'])
         index_full = np.nonzero(cam_links == ser['CAM_URL'])[0][0]
         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
         if not ser['FOLDER_URL'] or \
-                sheet_full_data.cell(index_full + 2, 1) == 'TRUE' or sheet.cell(index_ + 2, 7).value:
-            print("why?")
+                sheet_full_data.cell(index_full + 2, 1) == 'TRUE':
             continue
         folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
         urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
