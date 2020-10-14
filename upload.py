@@ -126,11 +126,12 @@ def upload(is_manual: bool):
     for i, ser in full_data.iterrows():
         index_full = np.nonzero(cam_links == ser['CAM_URL'])[0][0]
         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
-        if not ser['FOLDER_ID'] or ser['FOLDER_ID'] != ser['FOLDER_ID'] or \
+        if not ser['FOLDER_ID'] or ser['FOLDER_URL'] != ser['FOLDER_ID'] or \
                 sheet_full_data.cell(index_full + 2, 1) == 'TRUE' or sheet.cell(index_ + 2, 7):
             continue
+        folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL'])
         urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
-        session_id = uploader.upload_folder(urls, ser['XML'], ser['FOLDER_ID'])
+        session_id = uploader.upload_folder(urls, ser['XML'], folder_id)
         session_url = f'https://huji.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id={session_id}'
         print(session_url)
         sheet_full_data.update_cell(index_full + 2, 1, 'TRUE')
