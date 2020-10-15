@@ -119,6 +119,7 @@ def upload(is_manual: bool):
     '''
     Main method
     '''
+    current_data = full_data
     if is_manual:
         manuals = data[data['IS_TICKED'].values == 'TRUE']
         manuals = manuals[manuals['TIME_UPLOADED'].notnull()]
@@ -143,7 +144,8 @@ def upload(is_manual: bool):
         sheet_full_data.update_cell(index_full + 2, 14, session_id)
         sheet.update_cell(index_ + 2, 1, 'TRUE')
         sheet.update_cell(index_ + 2, 7, datetime.now().isoformat())
-        filter_data = full_data[(full_data['COURSE_NAME'] == ser['COURSE_NAME']) & (full_data['IS_TICKED'] == 'FALSE')]
+        current_data = sheet_full_data.get_all_records()
+        filter_data = current_data[(current_data['COURSE_NAME'] == ser['COURSE_NAME']) & (current_data['IS_TICKED'] == 'FALSE')]
         if filter_data.empty:
             sheet.update_cell(index_ + 2, 8, datetime.now().isoformat())
 
@@ -163,6 +165,7 @@ def main(is_manual):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
     uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
+
     upload(is_manual)
 
 
@@ -215,3 +218,21 @@ if __name__ == '__main__':
 #         print(e)
 #         print('sleeping')
 #         time.sleep(100)
+
+
+# cells = []
+# for i, ser in full_data.iterrows():
+#     filter_data = full_data[(full_data['COURSE_NAME'] == ser['COURSE_NAME']) & (full_data['IS_TICKED'] == 'FALSE')]
+#     if filter_data.empty:
+#         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
+#         cells.append(Cell(row=index_ + 2, col=8, value=datetime.now().isoformat()))
+# while True:
+#     try:
+#         sheet.update_cells(cells)
+#         break
+#     except gspread.exceptions.APIError as e:
+#         print(e)
+#         time.sleep(100)
+#
+#
+# exit(-1)
