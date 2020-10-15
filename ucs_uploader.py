@@ -88,13 +88,12 @@ class UcsUploader:
         # file_path = 'unique.xml'
         # with open(file_path, 'w', encoding='utf-8') as f:
         #     f.write(xml)
-        tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.xml')
+        dirname = os.getcwd()
+        tmp = tempfile.NamedTemporaryFile(dir=dirname, mode='w', suffix='.xml')
         tmp.write(xml)
         file_path = tmp.name
         self.__multipart_upload(upload_target, file_path)
         tmp.close()
-        os.remove(file_path)
-
         for url in urls:
             if "http" in url:
                 file_path = f'/cs/cloudstore/{url.replace("http://", "")}'
