@@ -103,7 +103,7 @@ class UcsUploader:
         # step 4 - finish the upload
         self.__finish_upload(session_upload)
         self.__setup_or_refresh_access_token()
-        return session_upload['Id']
+        return session_upload['ID']
         # step 5 - monitor the progress of processing
         # self.__monitor_progress(upload_id)
 
