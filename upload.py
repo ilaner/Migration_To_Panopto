@@ -137,10 +137,10 @@ def upload(is_manual: bool):
         folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
         urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
         session_id = uploader.upload_folder(urls, ser['XML'], folder_id)
-        session_url = f'https://huji.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id={session_id}'
-        print(session_url)
+        # session_url = f'https://huji.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id={session_id}'
+        # print(session_url)
         sheet_full_data.update_cell(index_full + 2, 1, 'TRUE')
-        sheet_full_data.update_cell(index_full + 2, 13, session_url)
+        sheet_full_data.update_cell(index_full + 2, 14, session_id)
         sheet.update_cell(index_ + 2, 1, 'TRUE')
         sheet.update_cell(index_ + 2, 7, datetime.now().isoformat())
 
