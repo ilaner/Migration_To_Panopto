@@ -156,7 +156,7 @@ def upload(is_manual: bool, is_main: bool):
 
 
 def main(is_manual, is_main=True):
-    global data, uploader, cam_links, course_names, sheet_full_data, sheet, full_data
+    global data, uploader, course_names, sheet_full_data, sheet, full_data
     scope = ['https://spreadsheets.google.com/feeds',
              'https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_name(config.GOOGLE_JSON, scope)
@@ -165,7 +165,7 @@ def main(is_manual, is_main=True):
     sheet_full_data = client.open('Full StreamitUP Data').sheet1
     data = pd.DataFrame(sheet.get_all_records())
     full_data = pd.DataFrame(sheet_full_data.get_all_records())
-    cam_links = full_data['CAM_URL'].values
+    # xml_strs = full_data['XML'].values
     course_names = data['COURSE_NAME'].values
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
