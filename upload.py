@@ -29,10 +29,11 @@ def parse_argument():
     parser.add_argument('--client-id', dest='client_id', required=True, help='Client ID of OAuth2 client')
     parser.add_argument('--client-secret', dest='client_secret', required=True, help='Client Secret of OAuth2 client')
     parser.add_argument('--is-manual', dest='is_manual', required=True)
+    parser.add_argument('--is-main', dest='is_main', required=True)
     args = parser.parse_args()
     config.PANOPTO_CLIEND_ID = args.client_id
     config.PANOPTO_SECRET = args.client_secret
-    return True if args.is_manual == 'TRUE' else False
+    return True if args.is_manual == 'TRUE' else False, True if args.is_main == 'TRUE' else False
 
 
 def search(folders, course_id, year, semester):
@@ -114,12 +115,12 @@ def get_urls(cam_url, screen_url):
     return [cam_url, screen_url] if screen_url else [cam_url]
 
 
-def upload(is_manual: bool):
+def upload(is_manual: bool, is_main: bool):
     global full_data
     '''
     Main method
     '''
-    current_data = full_data
+
     if is_manual:
         manuals = data[data['IS_TICKED'].values == 'TRUE']
         manuals = manuals[manuals['TIME_UPLOADED'].notnull()]
@@ -130,27 +131,31 @@ def upload(is_manual: bool):
         print(ser['COURSE_NAME'])
         print(ser['TITLE'])
         print(ser['FOLDER_URL'])
-        index_full = np.nonzero(cam_links == ser['CAM_URL'])[0][0]
         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
         if not ser['FOLDER_URL'] or \
-                sheet_full_data.cell(index_full + 2, 1) == 'TRUE':
+                sheet_full_data.cell(i + 2, 1) == 'TRUE':
+            continue
+        if sheet_full_data.cell(i + 2, 15) == 'TRUE' and sheet_full_data.cell(i + 2, 1) == 'FALSE' and not is_main:
+            # stuck in the middle, only main pc should download
             continue
         folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
         urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
+        sheet_full_data.update_cell(i + 2, 15, 'TRUE')
         session_id = uploader.upload_folder(urls, ser['XML'], folder_id)
         # session_url = f'https://huji.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id={session_id}'
         # print(session_url)
-        sheet_full_data.update_cell(index_full + 2, 1, 'TRUE')
-        sheet_full_data.update_cell(index_full + 2, 14, session_id)
+        sheet_full_data.update_cell(i + 2, 1, 'TRUE')
+        sheet_full_data.update_cell(i + 2, 14, session_id)
         sheet.update_cell(index_ + 2, 1, 'TRUE')
         sheet.update_cell(index_ + 2, 7, datetime.now().isoformat())
         current_data = pd.DataFrame(sheet_full_data.get_all_records())
-        filter_data = current_data[(current_data['COURSE_NAME'] == ser['COURSE_NAME']) & (current_data['IS_TICKED'] == 'FALSE')]
+        filter_data = current_data[(current_data['COURSE_NAME'] == ser['COURSE_NAME']) &
+                                   (current_data['IS_TICKED'] == 'FALSE')]
         if filter_data.empty:
             sheet.update_cell(index_ + 2, 8, datetime.now().isoformat())
 
 
-def main(is_manual):
+def main(is_manual, is_main=True):
     global data, uploader, cam_links, course_names, sheet_full_data, sheet, full_data
     scope = ['https://spreadsheets.google.com/feeds',
              'https://www.googleapis.com/auth/drive']
@@ -166,14 +171,14 @@ def main(is_manual):
     oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
     uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
 
-    upload(is_manual)
+    upload(is_manual, is_main)
 
 
 if __name__ == '__main__':
-    is_manual = parse_argument()
+    is_manual, is_main = parse_argument()
     if is_manual:
-        main(is_manual)
-        schedule.every(2).minutes.do(main, is_manual)
+        main(is_manual, is_main)
+        schedule.every(2).minutes.do(main, is_manual, is_main)
     else:
         main(is_manual)
     while True:
@@ -220,12 +225,28 @@ if __name__ == '__main__':
 #         time.sleep(100)
 
 
+# parse_argument()
+# scope = ['https://spreadsheets.google.com/feeds',
+#          'https://www.googleapis.com/auth/drive']
+# creds = ServiceAccountCredentials.from_json_keyfile_name(config.GOOGLE_JSON, scope)
+# client = gspread.authorize(creds)
+# sheet = client.open("StreamitUP to Panopto DB").sheet1
+# sheet_full_data = client.open('Full StreamitUP Data').sheet1
+# data = pd.DataFrame(sheet.get_all_records())
+# full_data = pd.DataFrame(sheet_full_data.get_all_records())
+# cam_links = full_data['CAM_URL'].values
+# course_names = data['COURSE_NAME'].values
+# urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
+# uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
+#
 # cells = []
-# for i, ser in full_data.iterrows():
-#     filter_data = full_data[(full_data['COURSE_NAME'] == ser['COURSE_NAME']) & (full_data['IS_TICKED'] == 'FALSE')]
-#     if filter_data.empty:
-#         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
-#         cells.append(Cell(row=index_ + 2, col=8, value=datetime.now().isoformat()))
+# for row in sheet_full_data:
+#
+#     # filter_data = full_data[(full_data['IS_TICKED'] == 'FALSE')]
+#     # if filter_data.empty:
+#     #     index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
+#     #     cells.append(Cell(row=index_ + 2, col=8, value=datetime.now().isoformat()))
 # while True:
 #     try:
 #         sheet.update_cells(cells)
