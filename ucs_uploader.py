@@ -89,7 +89,7 @@ class UcsUploader:
         # with open(file_path, 'w', encoding='utf-8') as f:
         #     f.write(xml)
         dirname = os.getcwd()
-        tmp = tempfile.NamedTemporaryFile(dir=dirname, mode='w', suffix='.xml')
+        tmp = tempfile.NamedTemporaryFile(dir=dirname, mode='w', suffix='.xml', delete=False)
         tmp.write(xml)
         file_path = tmp.name
         self.__multipart_upload(upload_target, file_path)
