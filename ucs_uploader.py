@@ -1,5 +1,7 @@
 #!python3
 import os
+import uuid
+
 import requests
 import codecs
 import time
@@ -88,16 +90,11 @@ class UcsUploader:
         # file_path = 'unique.xml'
         # with open(file_path, 'w', encoding='utf-8') as f:
         #     f.write(xml)
-        fd, file_path = tempfile.mkstemp(suffix=".xml", prefix="abc")  # can use anything
-        try:
-            with os.fdopen(fd, 'w') as tmpo:
-                # do stuff with temp file
-                tmpo.write(xml)
-            print("ok")
-        finally:
-            os.remove(file_path)
-
+        file_path = uuid.uuid4().hex
+        with open(file_path, 'w') as f:
+            f.write(xml)
         self.__multipart_upload(upload_target, file_path)
+        os.remove(file_path)
         for url in urls:
             if "http" in url:
                 file_path = f'/cs/cloudstore/{url.replace("http://", "")}'
