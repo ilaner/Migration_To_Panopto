@@ -88,10 +88,15 @@ class UcsUploader:
         # file_path = 'unique.xml'
         # with open(file_path, 'w', encoding='utf-8') as f:
         #     f.write(xml)
-        dirname = os.getcwd()
-        tmp = tempfile.NamedTemporaryFile(dir=dirname, mode='w', suffix='.xml', delete=False)
-        tmp.write(xml)
-        file_path = tmp.name
+        fd, file_path = tempfile.mkstemp(suffix=".xml", prefix="abc")  # can use anything
+        try:
+            with os.fdopen(fd, 'w') as tmpo:
+                # do stuff with temp file
+                tmpo.write(xml)
+            print("ok")
+        finally:
+            os.remove(file_path)
+
         self.__multipart_upload(upload_target, file_path)
         tmp.close()
         for url in urls:
