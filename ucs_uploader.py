@@ -90,7 +90,7 @@ class UcsUploader:
         # file_path = 'unique.xml'
         # with open(file_path, 'w', encoding='utf-8') as f:
         #     f.write(xml)
-        file_path = uuid.uuid4().hex
+        file_path = uuid.uuid4().hex + '.xml'
         with open(file_path, 'w') as f:
             f.write(xml)
         self.__multipart_upload(upload_target, file_path)
