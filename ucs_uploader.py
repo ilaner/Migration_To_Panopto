@@ -12,6 +12,7 @@ import concurrent.futures
 from boto3.s3.transfer import S3Transfer, TransferConfig
 import threading
 import sys
+import pathlib
 from botocore.config import Config
 
 # Size of each part of multipart upload.
@@ -93,6 +94,8 @@ class UcsUploader:
         for url in urls:
             if "http" in url:
                 file_path = f'/cs/cloudstore/{url.replace("http://", "")}'
+                folder = os.path.dirname(file_path)
+                pathlib.Path(folder).mkdir(parents=True, exist_ok=True)
                 download(url, file_path)
             else:
                 file_path = url
