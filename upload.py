@@ -144,7 +144,7 @@ def upload(is_manual: bool):
         sheet_full_data.update_cell(index_full + 2, 14, session_id)
         sheet.update_cell(index_ + 2, 1, 'TRUE')
         sheet.update_cell(index_ + 2, 7, datetime.now().isoformat())
-        current_data = sheet_full_data.get_all_records()
+        current_data = pd.DataFrame(sheet_full_data.get_all_records())
         filter_data = current_data[(current_data['COURSE_NAME'] == ser['COURSE_NAME']) & (current_data['IS_TICKED'] == 'FALSE')]
         if filter_data.empty:
             sheet.update_cell(index_ + 2, 8, datetime.now().isoformat())
