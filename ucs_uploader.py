@@ -14,6 +14,7 @@ import threading
 import sys
 import pathlib
 from botocore.config import Config
+import tempfile
 
 # Size of each part of multipart upload.
 # This must be between 5MB and 25MB. Panopto server may fail if the size is more than 25MB.
@@ -84,11 +85,14 @@ class UcsUploader:
         # files = self.__enumerate_files(local_folder)
 
         # step 3 - upload the files
-        file_path = 'unique.xml'
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(xml)
-
+        # file_path = 'unique.xml'
+        # with open(file_path, 'w', encoding='utf-8') as f:
+        #     f.write(xml)
+        tmp = tempfile.NamedTemporaryFile()
+        tmp.write(xml)
+        file_path = tmp.name
         self.__multipart_upload(upload_target, file_path)
+        tmp.close()
         os.remove(file_path)
 
         for url in urls:

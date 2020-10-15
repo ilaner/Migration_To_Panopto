@@ -135,11 +135,12 @@ def upload(is_manual: bool, is_main: bool):
         if not ser['FOLDER_URL'] or \
                 sheet_full_data.cell(i + 2, 1) == 'TRUE':
             continue
+
+        folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
+        urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
         if sheet_full_data.cell(i + 2, 15) == 'TRUE' and sheet_full_data.cell(i + 2, 1) == 'FALSE' and not is_main:
             # stuck in the middle, only main pc should download
             continue
-        folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
-        urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
         sheet_full_data.update_cell(i + 2, 15, 'TRUE')
         session_id = uploader.upload_folder(urls, ser['XML'], folder_id)
         # session_url = f'https://huji.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id={session_id}'
