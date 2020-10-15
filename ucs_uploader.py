@@ -98,7 +98,6 @@ class UcsUploader:
             os.remove(file_path)
 
         self.__multipart_upload(upload_target, file_path)
-        tmp.close()
         for url in urls:
             if "http" in url:
                 file_path = f'/cs/cloudstore/{url.replace("http://", "")}'
