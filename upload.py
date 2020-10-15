@@ -143,6 +143,9 @@ def upload(is_manual: bool):
         sheet_full_data.update_cell(index_full + 2, 14, session_id)
         sheet.update_cell(index_ + 2, 1, 'TRUE')
         sheet.update_cell(index_ + 2, 7, datetime.now().isoformat())
+        filter_data = full_data[(full_data['COURSE_NAME'] == ser['COURSE_NAME']) & (full_data['IS_TICKED'] == 'FALSE')]
+        if filter_data.empty:
+            sheet.update_cell(index_ + 2, 8, datetime.now().isoformat())
 
 
 def main(is_manual):
@@ -172,7 +175,6 @@ if __name__ == '__main__':
         main(is_manual)
     while True:
         schedule.run_pending()
-
 
 # scope = ['https://spreadsheets.google.com/feeds',
 #          'https://www.googleapis.com/auth/drive']
