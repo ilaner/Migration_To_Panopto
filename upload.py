@@ -62,22 +62,6 @@ def is_valid_url(url):
         return False
 
 
-body = lambda named_range_id: {
-    "requests": [
-        {
-            "addProtectedRange": {
-                "protectedRange": {
-                    "namedRangeId": named_range_id,
-                    "description": "Protecting via gsheets_manager",
-                    "warningOnly": False,
-                    "requestingUserCanEdit": False,
-                    "editors": {
-                        "users": ["ilanerukh@gmail.com", 'uploader-panotpo@uploader-panopto.iam.gserviceaccount.com']
-                    }}
-            }
-        }
-    ]
-}
 
 
 # parse_argument()
@@ -133,13 +117,14 @@ def upload(is_manual: bool, is_main: bool):
         print(ser['FOLDER_URL'])
         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
         if not ser['FOLDER_URL'] or \
-                sheet_full_data.cell(i + 2, 1) == 'TRUE':
+                sheet_full_data.cell(i + 2, 1).value == 'TRUE':  # finish session
             continue
 
         folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
         urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
-        if sheet_full_data.cell(i + 2, 15) == 'TRUE' and sheet_full_data.cell(i + 2, 1) == 'FALSE' and not is_main:
+        if sheet_full_data.cell(i + 2, 15).value == 'TRUE' and not is_main:
             # stuck in the middle, only main pc should download
+            print(is_main)
             continue
         sheet_full_data.update_cell(i + 2, 15, 'TRUE')
         session_id = uploader.upload_folder(urls, ser['XML'], folder_id)
@@ -181,7 +166,7 @@ if __name__ == '__main__':
         main(is_manual, is_main)
         schedule.every(2).minutes.do(main, is_manual, is_main)
     else:
-        main(is_manual)
+        main(is_manual, is_main) if is_main else main(is_manual)
     while True:
         schedule.run_pending()
 
