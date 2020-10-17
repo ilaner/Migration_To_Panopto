@@ -30,10 +30,12 @@ def parse_argument():
     parser.add_argument('--client-secret', dest='client_secret', required=True, help='Client Secret of OAuth2 client')
     parser.add_argument('--is-manual', dest='is_manual', required=True)
     parser.add_argument('--is-main', dest='is_main', required=True)
+    parser.add_argument('--is-fast', dest='is_fast')
     args = parser.parse_args()
     config.PANOPTO_CLIEND_ID = args.client_id
     config.PANOPTO_SECRET = args.client_secret
-    return True if args.is_manual == 'TRUE' else False, True if args.is_main == 'TRUE' else False
+    return True if args.is_manual == 'TRUE' else False, True if args.is_main == 'TRUE' else False, \
+           True if args.is_fast == 'TRUE' else False
 
 
 def search(folders, course_id, year, semester):
@@ -60,8 +62,6 @@ def is_valid_url(url):
         return False
     except (TimeoutError, requests.exceptions.ConnectionError):
         return False
-
-
 
 
 # parse_argument()
@@ -119,7 +119,8 @@ def upload(is_manual: bool, is_main: bool):
         if not ser['FOLDER_URL'] or \
                 sheet_full_data.cell(i + 2, 1).value == 'TRUE':  # finish session
             continue
-
+        if "132" not in ser['CAM_URL'] and is_fast:
+            continue
         folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
         urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
         if sheet_full_data.cell(i + 2, 15).value == 'TRUE' and not is_main:
@@ -141,7 +142,7 @@ def upload(is_manual: bool, is_main: bool):
             sheet.update_cell(index_ + 2, 8, datetime.now().isoformat())
 
 
-def main(is_manual, is_main=True):
+def main(is_manual, is_main=True, is_fast=False):
     global data, uploader, course_names, sheet_full_data, sheet, full_data
     scope = ['https://spreadsheets.google.com/feeds',
              'https://www.googleapis.com/auth/drive']
@@ -157,16 +158,16 @@ def main(is_manual, is_main=True):
     oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
     uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
 
-    upload(is_manual, is_main)
+    upload(is_manual, is_main, is_fast)
 
 
 if __name__ == '__main__':
-    is_manual, is_main = parse_argument()
+    is_manual, is_main, is_fast = parse_argument()
     if is_manual:
-        main(is_manual, is_main)
-        schedule.every(2).minutes.do(main, is_manual, is_main)
+        main(is_manual, is_main, is_fast)
+        schedule.every(2).minutes.do(main, is_manual, is_main, is_fast)
     else:
-        main(is_manual, is_main) if is_main else main(is_manual)
+        main(is_manual, is_main, is_fast)
     while True:
         schedule.run_pending()
 

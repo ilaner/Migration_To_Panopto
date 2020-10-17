@@ -19,9 +19,9 @@ class PanoptoSessions:
         self.requests_session = requests.Session()
         self.requests_session.verify = self.ssl_verify
 
-        self.__setup_or_refresh_access_token()
+        self.setup_or_refresh_access_token()
 
-    def __setup_or_refresh_access_token(self):
+    def setup_or_refresh_access_token(self):
         '''
         This method invokes OAuth2 Authorization Code Grant authorization flow.
         It goes through browser UI for the first time.
@@ -46,7 +46,7 @@ class PanoptoSessions:
 
         if response.status_code == 401:
             print('Unauthorized. Refresh access token.')
-            self.__setup_or_refresh_access_token()
+            self.setup_or_refresh_access_token()
             return True
 
         if response.status_code == 429:
