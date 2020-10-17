@@ -99,7 +99,7 @@ def get_urls(cam_url, screen_url):
     return [cam_url, screen_url] if screen_url else [cam_url]
 
 
-def upload(is_manual: bool, is_main: bool):
+def upload(is_manual: bool, is_main: bool, is_fast: bool):
     global full_data
     '''
     Main method
