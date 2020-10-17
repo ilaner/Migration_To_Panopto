@@ -127,19 +127,34 @@ def upload(is_manual: bool, is_main: bool, is_fast: bool):
             # stuck in the middle, only main pc should download
             print(is_main)
             continue
-        sheet_full_data.update_cell(i + 2, 15, 'TRUE')
+        while True:
+            try:
+                sheet_full_data.update_cell(i + 2, 15, 'TRUE')
+                break
+            except gspread.exceptions.APIError:
+                time.sleep(100)
         session_id = uploader.upload_folder(urls, ser['XML'], folder_id)
         # session_url = f'https://huji.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id={session_id}'
         # print(session_url)
-        sheet_full_data.update_cell(i + 2, 1, 'TRUE')
-        sheet_full_data.update_cell(i + 2, 14, session_id)
-        sheet.update_cell(index_ + 2, 1, 'TRUE')
-        sheet.update_cell(index_ + 2, 7, datetime.now().isoformat())
+        while True:
+            try:
+                sheet_full_data.update_cell(i + 2, 1, 'TRUE')
+                sheet_full_data.update_cell(i + 2, 14, session_id)
+                sheet.update_cell(index_ + 2, 1, 'TRUE')
+                sheet.update_cell(index_ + 2, 7, datetime.now().isoformat())
+                break
+            except gspread.exceptions.APIError:
+                time.sleep(100)
         current_data = pd.DataFrame(sheet_full_data.get_all_records())
         filter_data = current_data[(current_data['COURSE_NAME'] == ser['COURSE_NAME']) &
                                    (current_data['IS_TICKED'] == 'FALSE')]
         if filter_data.empty:
-            sheet.update_cell(index_ + 2, 8, datetime.now().isoformat())
+            while True:
+                try:
+                    sheet.update_cell(index_ + 2, 8, datetime.now().isoformat())
+                    break
+                except gspread.exceptions.APIError:
+                    time.sleep(100)
 
 
 def main(is_manual, is_main=True, is_fast=False):
