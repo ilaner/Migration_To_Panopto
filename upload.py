@@ -107,7 +107,7 @@ def safe_read(sheet: gspread.Spreadsheet.sheet1, row, col):
     while True:
         try:
             return sheet.cell(row, col).value
-        except gspread.exceptions.APIError:
+        except:
             time.sleep(100)
 
 
@@ -136,6 +136,9 @@ def upload(is_manual: bool, is_main: bool, is_fast: bool):
         manuals = full_data[full_data['COURSE_NAME'].isin(manuals['COURSE_NAME'].values)]
         manuals = manuals[manuals['IS_TICKED'].values == 'FALSE']
         full_data = manuals
+    if is_fast:
+        full_data = full_data[full_data['CAM_URL'].str.contains("132")]
+    full_data = full_data[full_data['FOLDER_URL'] != ""]
     for i, ser in full_data.iterrows():
         print(ser['COURSE_NAME'])
         print(ser['TITLE'])
@@ -143,8 +146,6 @@ def upload(is_manual: bool, is_main: bool, is_fast: bool):
         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
         if not ser['FOLDER_URL'] or \
                 safe_read(sheet_full_data, i + 2, 1) == 'TRUE':  # finish session
-            continue
-        if "132" not in ser['CAM_URL'] and is_fast:
             continue
         folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
         urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
