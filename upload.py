@@ -95,10 +95,18 @@ def safe_update(sheet: gspread.Spreadsheet.sheet1, row, col, value):
             time.sleep(100)
 
 
-def safe_read(sheet: gspread.Spreadsheet.sheet1):
+def safe_get_df(sheet: gspread.Spreadsheet.sheet1):
     while True:
         try:
             return pd.DataFrame(sheet.get_all_records())
+        except gspread.exceptions.APIError:
+            time.sleep(100)
+
+
+def safe_read(sheet: gspread.Spreadsheet.sheet1, row, col):
+    while True:
+        try:
+            return sheet.cell(row, col).value
         except gspread.exceptions.APIError:
             time.sleep(100)
 
@@ -134,13 +142,13 @@ def upload(is_manual: bool, is_main: bool, is_fast: bool):
         print(ser['FOLDER_URL'])
         index_ = np.nonzero(course_names == ser['COURSE_NAME'])[0][0]
         if not ser['FOLDER_URL'] or \
-                sheet_full_data.cell(i + 2, 1).value == 'TRUE':  # finish session
+                safe_read(sheet_full_data, i + 2, 1) == 'TRUE':  # finish session
             continue
         if "132" not in ser['CAM_URL'] and is_fast:
             continue
         folder_id = re.search(r'folderID=%22(.*)%22', ser['FOLDER_URL']).group(1)
         urls = get_urls(ser['CAM_URL'], ser['SCREEN_URL'])
-        if sheet_full_data.cell(i + 2, 15).value == 'TRUE' and not is_main:
+        if safe_read(sheet_full_data, i + 2, 15) == 'TRUE' and not is_main:
             # stuck in the middle, only main pc should download
             print(is_main)
             continue
@@ -152,7 +160,7 @@ def upload(is_manual: bool, is_main: bool, is_fast: bool):
         safe_update(sheet_full_data, i + 2, 14, session_id)
         safe_update(sheet, index_ + 2, 1, 'TRUE')
         safe_update(sheet, index_ + 2, 7, datetime.now().isoformat())
-        current_data = safe_read(sheet_full_data)
+        current_data = safe_get_df(sheet_full_data)
         filter_data = current_data[(current_data['COURSE_NAME'] == ser['COURSE_NAME']) &
                                    (current_data['IS_TICKED'] == 'FALSE')]
         if filter_data.empty:
@@ -167,8 +175,8 @@ def main(is_manual, is_main=True, is_fast=False):
     client = gspread.authorize(creds)
     sheet = client.open("StreamitUP to Panopto DB").sheet1
     sheet_full_data = client.open('Full StreamitUP Data').sheet1
-    data = safe_read(sheet)
-    full_data = safe_read(sheet_full_data)
+    data = safe_get_df(sheet)
+    full_data = safe_get_df(sheet_full_data)
     # xml_strs = full_data['XML'].values
     course_names = data['COURSE_NAME'].values
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
