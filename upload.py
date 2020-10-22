@@ -41,6 +41,7 @@ def parse_argument():
 def search(folders, course_id, year, semester):
     results = folders.search_folders(rf'{course_id}')
     id = None
+    m=None
     for result in results:
         m = re.search(rf'{config.YEARS[year]} -> {course_id}', result['Name'])
         if m is None:
@@ -51,6 +52,11 @@ def search(folders, course_id, year, semester):
                 result['ParentFolder']['Name'] == f'{config.YEARS[year]} -> Semesters 1 and 2' or \
                 result['ParentFolder']['Name'] == f'{config.YEARS[year]} -> Summer':
             return result['Id']
+    if id is None:
+        for result in results:
+            m = re.search(rf'{config.YEARS[year]} -> {course_id}', result['Name'])
+            if m is not None:
+                return result['Id']
     return id
 
 
@@ -64,27 +70,25 @@ def is_valid_url(url):
         return False
 
 
-# parse_argument()
-# urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-# oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
-# uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
-# folders = PanoptoFolders(config.PANOPTO_SERVER_NAME, False, oauth2)
-#
-#
-# def update_folder_structure(children):
-#     if not children:
-#         return
-#     for child in children:
-#         if '2017-18 ->' not in child['Name']:
-#             if not folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}'):
-#                 folders.setup_or_refresh_access_token()
-#                 folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}')
-#             print(child['Name'])
-#         update_folder_structure(folders.get_children(child['Id']))
-#
-#
-# update_folder_structure(folders.get_children('98ead464-9a2a-48ce-bef7-ac5300a34b5a'))
-# exit()
+parse_argument()
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
+uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
+folders = PanoptoFolders(config.PANOPTO_SERVER_NAME, False, oauth2)
+
+
+def update_folder_structure(children):
+    if not children:
+        return
+    for child in children:
+        if '2017-18 ->' not in child['Name']:
+            if not folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}'):
+                folders.setup_or_refresh_access_token()
+                folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}')
+            print(child['Name'])
+        update_folder_structure(folders.get_children(child['Id']))
+
+
 
 def safe_update(sheet: gspread.Spreadsheet.sheet1, row, col, value):
     while True:
@@ -114,12 +118,12 @@ def safe_read(sheet: gspread.Spreadsheet.sheet1, row, col):
 def get_urls(cam_url, screen_url):
     fpath_cam = f'/cs/cloudstore/{cam_url.replace("http://", "")}'
     r = requests.get(cam_url, stream=True)
-    if os.path.exists(fpath_cam) and os.stat(fpath_cam).st_size == int(r.headers.get('content-length', 0)):
+    if os.path.exists(fpath_cam) and os.stat(fpath_cam).st_size >= int(r.headers.get('content-length', 0)):
         cam_url = fpath_cam
     if screen_url and type(screen_url) != float:
         fpath_screen = f'/cs/cloudstore/{screen_url.replace("http://", "")}'
         r = requests.get(screen_url, stream=True)
-        if os.path.exists(fpath_screen) and os.stat(fpath_screen).st_size == int(r.headers.get('content-length', 0)):
+        if os.path.exists(fpath_screen) and os.stat(fpath_screen).st_size >= int(r.headers.get('content-length', 0)):
             screen_url = fpath_screen
     return [cam_url, screen_url] if screen_url else [cam_url]
 
