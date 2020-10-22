@@ -70,16 +70,16 @@ def is_valid_url(url):
         return False
 
 
-def update_folder_structure(children):
-    if not children:
-        return
-    for child in children:
-        if '2017-18 ->' not in child['Name']:
-            if not folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}'):
-                folders.setup_or_refresh_access_token()
-                folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}')
-            print(child['Name'])
-        update_folder_structure(folders.get_children(child['Id']))
+# def update_folder_structure(children):
+#     if not children:
+#         return
+#     for child in children:
+#         if '2017-18 ->' not in child['Name']:
+#             if not folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}'):
+#                 folders.setup_or_refresh_access_token()
+#                 folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}')
+#             print(child['Name'])
+#         update_folder_structure(folders.get_children(child['Id']))
 
 
 def safe_update(sheet: gspread.Spreadsheet.sheet1, row, col, value):
@@ -134,7 +134,7 @@ def upload(is_manual: bool, is_main: bool, is_fast: bool):
         full_data = manuals
     if is_fast:
         full_data = full_data[full_data['CAM_URL'].str.contains("132")]
-    full_data = full_data[full_data['FOLDER_URL'] != ""]
+    full_data = full_data[(full_data['FOLDER_URL'] != "") & (full_data['IS_TICKED']=='FALSE')]
     for i, ser in full_data.iterrows():
         print(ser['COURSE_NAME'])
         print(ser['TITLE'])
