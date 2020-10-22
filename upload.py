@@ -41,7 +41,7 @@ def parse_argument():
 def search(folders, course_id, year, semester):
     results = folders.search_folders(rf'{course_id}')
     id = None
-    m=None
+    m = None
     for result in results:
         m = re.search(rf'{config.YEARS[year]} -> {course_id}', result['Name'])
         if m is None:
@@ -70,13 +70,6 @@ def is_valid_url(url):
         return False
 
 
-parse_argument()
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-oauth2 = PanoptoOAuth2(config.PANOPTO_SERVER_NAME, config.PANOPTO_CLIEND_ID, config.PANOPTO_SECRET, False)
-uploader = UcsUploader(config.PANOPTO_SERVER_NAME, False, oauth2)
-folders = PanoptoFolders(config.PANOPTO_SERVER_NAME, False, oauth2)
-
-
 def update_folder_structure(children):
     if not children:
         return
@@ -87,7 +80,6 @@ def update_folder_structure(children):
                 folders.update_folder_name(child['Id'], f'2017-18 -> {child["Name"]}')
             print(child['Name'])
         update_folder_structure(folders.get_children(child['Id']))
-
 
 
 def safe_update(sheet: gspread.Spreadsheet.sheet1, row, col, value):
