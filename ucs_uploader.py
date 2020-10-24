@@ -80,6 +80,8 @@ class UcsUploader:
         # step 1 - Create a session
 
         session_upload = self.__create_session(folder_id)
+        if 'ID' not in session_upload:
+            return None
         upload_id = session_upload['ID']
         upload_target = session_upload['UploadTarget']
 
@@ -107,7 +109,7 @@ class UcsUploader:
         # step 4 - finish the upload
         self.__finish_upload(session_upload)
         self.__setup_or_refresh_access_token()
-        return session_upload['ID']
+        return upload_id
         # step 5 - monitor the progress of processing
         # self.__monitor_progress(upload_id)
 
@@ -126,8 +128,9 @@ class UcsUploader:
                 break
 
         session_upload = resp.json()
-        print('  ID: {0}'.format(session_upload['ID']))
-        print('  target: {0}'.format(session_upload['UploadTarget']))
+        print(session_upload)
+        # print('  ID: {0}'.format(session_upload['ID']))
+        # print('  target: {0}'.format(session_upload['UploadTarget']))
         return session_upload
 
     def __enumerate_files(self, folder):

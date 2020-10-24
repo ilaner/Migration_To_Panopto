@@ -87,7 +87,7 @@ def safe_update(sheet: gspread.Spreadsheet.sheet1, row, col, value):
         try:
             sheet.update_cell(row, col, value)
             break
-        except gspread.exceptions.APIError:
+        except:
             time.sleep(100)
 
 
@@ -95,7 +95,7 @@ def safe_get_df(sheet: gspread.Spreadsheet.sheet1):
     while True:
         try:
             return pd.DataFrame(sheet.get_all_records())
-        except gspread.exceptions.APIError:
+        except:
             time.sleep(100)
 
 
@@ -151,6 +151,8 @@ def upload(is_manual: bool, is_main: bool, is_fast: bool):
             continue
         safe_update(sheet_full_data, i + 2, 15, 'TRUE')
         session_id = uploader.upload_folder(urls, ser['XML'], folder_id)
+        if not session_id:
+            continue
         # session_url = f'https://huji.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id={session_id}'
         # print(session_url)
         safe_update(sheet_full_data, i + 2, 1, 'TRUE')
