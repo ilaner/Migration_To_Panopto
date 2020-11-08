@@ -80,7 +80,7 @@ class UcsUploader:
         # step 1 - Create a session
 
         session_upload = self.__create_session(folder_id)
-        if 'ID' not in session_upload:
+        if session_upload is None or 'ID' not in session_upload:
             return None
         upload_id = session_upload['ID']
         upload_target = session_upload['UploadTarget']
@@ -123,7 +123,10 @@ class UcsUploader:
             url = 'https://{0}/Panopto/PublicAPI/REST/sessionUpload'.format(self.server)
             payload = {'FolderId': folder_id}
             headers = {'content-type': 'application/json'}
-            resp = self.requests_session.post(url=url, json=payload, headers=headers)
+            try:
+                resp = self.requests_session.post(url=url, json=payload, headers=headers)
+            except:
+                return None
             if not self.__inspect_response_is_retry_needed(resp):
                 break
 
