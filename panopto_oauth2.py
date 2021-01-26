@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler
 from socketserver import ThreadingTCPServer
 
 # This code uses this local URL as redirect target for Authorization Code Grant (Server-side Web Application)
-REDIRECT_URL = 'http://localhost:1233/redirect'
+REDIRECT_URL = 'http://firefly.cs.huji.ac.il:1233'
 REDIRECT_PORT = 1233
 
 # Typical scope for accessing Panopto API.
