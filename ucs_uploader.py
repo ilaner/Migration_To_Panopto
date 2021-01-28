@@ -80,7 +80,7 @@ class UcsUploader:
         # step 1 - Create a session
 
         session_upload = self.__create_session(folder_id)
-        if 'FolderID' not in session_upload or session_upload['FolderID'] is None:
+        if session_upload['FolderId'] is None or 'Id' not in session_upload:
             return None
         upload_id = session_upload['ID']
         upload_target = session_upload['UploadTarget']
