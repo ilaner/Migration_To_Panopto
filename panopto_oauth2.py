@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler
 from socketserver import ThreadingTCPServer
 
 # This code uses this local URL as redirect target for Authorization Code Grant (Server-side Web Application)
-REDIRECT_URL = 'http://localhost:9187'
+REDIRECT_URL = 'http://localhost:9187/redirect'
 REDIRECT_PORT = 9187
 
 # Typical scope for accessing Panopto API.
